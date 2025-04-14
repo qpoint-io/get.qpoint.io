@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+
+#
+#
+#     .d88888b.
+#    d88P" "Y88b
+#    888     888
+#    888     888
+#    888     888
+#    888 Y8b 888
+#    Y88b.Y8b88P
+#     \"Y888888\" point
+#           Y8b
+#
+#
+# This is an installation script for Qpoint (https://qpoint.io). Please run:
+#
+#     curl https://get.qpoint.io/install | sudo bash
+#
+#
+
+set -euo pipefail
+
+# configurable variables
+VERSION=0.8.2
+
+# script variables
+OS=
+ARCH=
+
+RED=
+GREEN=
+PURPLE=
+BOLD=
+DIM=
+RESET=
+RESET_BOLD=
+# terminal output - use colors
+if [ -t 1 ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    PURPLE='\033[0;35m'
+    BOLD='\033[1m'
+    DIM='\033[2m'
+    RESET_BOLD='\033[22m'
+    RESET='\033[0m'
+fi
+
+bold() {
+    printf "${BOLD}%s${RESET_BOLD}" "$*"
+}
+
+action() {
+    printf "${PURPLE}→ %s${RESET}\n" "$*"
+}
+
+error() {
+    printf >&2 "${RED}✗ %s${RESET}\n" "$*"
+    exit 1
+}
+
+success() {
+    printf "${GREEN}✓ %s${RESET}\n" "$*"
+}
+
+download_url() {
+    printf "https://downloads.qpoint.io/qpoint/qpoint-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+}
+
+setup() {
+    case "$(uname -sr)" in
+    Linux*Microsoft*)
+        error "windows/wsl is not supported"
+        ;;
+
+    Linux*)
+        OS="linux"
+        ;;
+
+    *)
+        error "unsupported operating system $(bold "$(uname -sr)")"
+        ;;
+    esac
+
+    case "$(uname -m)" in
+    x86_64)
+        ARCH="amd64"
+        ;;
+
+    aarch64 | arm64)
+        ARCH="arm64"
+        ;;
+
+    *)
+        error "unsupported architecture $(bold "$(uname -m)")"
+        ;;
+    esac
+
+    if [[ $(id -u) != 0 ]]; then
+        error "please run this script as root
+
+    curl https://get.qpoint.io/install | sudo bash"
+    fi
+}
+
+banner() {
+    echo -e ""
+    echo -e "${PURPLE} .d88888b.  ${RESET}"
+    echo -e "${PURPLE}d88P" "Y88b ${RESET}"
+    echo -e "${PURPLE}888     888 ${RESET}"
+    echo -e "${PURPLE}888     888 ${RESET}"
+    echo -e "${PURPLE}888     888 ${RESET}"
+    echo -e "${PURPLE}888 Y8b 888 ${RESET}"
+    echo -e "${PURPLE}Y88b.Y8b88P ${RESET}"
+    echo -e "${PURPLE} \"Y888888\"  ${BOLD}point${RESET}"
+    echo -e "${PURPLE}       Y8b  ${RESET}"
+    echo -e ""
+}
+
+install() {
+    action "installing Qpoint $(bold "v${VERSION}")"
+
+    local dir
+    if ! dir=$(mktemp -d); then
+        error "failed to create temporary directory"
+    fi
+
+    cd "$dir"
+    # shellcheck disable=SC2064 # we want $dir to expand now
+    trap "rm -rf '$dir'" EXIT
+
+    curl -fsSL "$(download_url)" | tar -xzf - -C .
+    mv qpoint-* /usr/local/bin/qpoint
+    chmod +x /usr/local/bin/qpoint
+
+    success "successfully installed at $(bold "/usr/local/bin/qpoint")"
+    printf '\n'
+}
+
+usage_instructions() {
+    action "usage instructions"
+    echo -e "${DIM}1.${RESET} log in at $(bold "https://app.qpoint.io/")"
+    echo -e "${DIM}2.${RESET} navigate to $(bold "Settings -> Installation") and copy the auth token"
+    echo -e "${DIM}3.${RESET} verify that the installation is successful by running:"
+    echo -e ""
+    echo -e "    sudo qpoint tap --registration-token $(bold "<auth-token>")"
+    echo -e ""
+    echo -e "${PURPLE}ℹ${RESET} to run qpoint as a service, follow the instructions at"
+    echo -e "    $(bold "https://docs.qpoint.io/installation/linux-binary#running-qtap-as-a-service")"
+    echo -e ""
+}
+
+banner
+setup
+install
+usage_instructions
