@@ -15,7 +15,7 @@
 #
 # This is an installation script for Qpoint (https://qpoint.io). Please run:
 #
-#     curl https://get.qpoint.io/install | sudo bash
+#     curl -s https://get.qpoint.io/install | sudo bash
 #
 #
 
@@ -99,7 +99,7 @@ setup() {
     if [[ $(id -u) != 0 ]]; then
         error "please run this script as root
 
-    curl https://get.qpoint.io/install | sudo bash"
+    curl -s https://get.qpoint.io/install | sudo bash"
     fi
 }
 
