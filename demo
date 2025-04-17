@@ -13,7 +13,7 @@
 #           Y8b
 #
 #
-# This is an installation script for Qpoint (https://qpoint.io). Please run:
+# This is an demo script for Qpoint (https://qpoint.io). Please run:
 #
 #     curl -s https://get.qpoint.io/install | sudo sh
 #
@@ -118,7 +118,7 @@ banner() {
 }
 
 install() {
-    action "installing Qpoint $(bold "v${VERSION}")"
+    action "downloading Qpoint $(bold "v${VERSION}")"
 
     if ! dir=$(mktemp -d); then
         error "failed to create temporary directory"
@@ -130,27 +130,20 @@ install() {
 
     curl -fsSL "$(download_url)" >qpoint.tgz
     tar -xzf qpoint.tgz
-    mv qpoint-* /usr/local/bin/qpoint
-    chmod +x /usr/local/bin/qpoint
+    mv qpoint-* qpoint
+    chmod +x qpoint
 
-    success "successfully installed at $(bold "/usr/local/bin/qpoint")"
+    success "successfully extracted qpoint to $(bold "$(pwd)/qpoint")"
     printf '\n'
 }
 
-usage_instructions() {
-    action "usage instructions"
-    echo "${DIM}1.${RESET} log in at $(bold "https://app.qpoint.io/")"
-    echo "${DIM}2.${RESET} navigate to $(bold "Settings -> Installation") and copy the auth token"
-    echo "${DIM}3.${RESET} verify that the installation is successful by running:"
+run() {
+    action "running Qpoint demo"
     echo ""
-    echo "    sudo qpoint tap --registration-token $(bold "<auth-token>")"
-    echo ""
-    echo "${PURPLE}ℹ${RESET} to run qpoint as a service, follow the instructions at"
-    echo "    $(bold "https://docs.qpoint.io/installation/linux-binary#running-qtap-as-a-service")"
-    echo ""
+    ./qpoint
 }
 
 banner
 setup
 install
-usage_instructions
+run
