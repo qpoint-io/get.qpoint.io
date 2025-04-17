@@ -13,7 +13,7 @@
 #           Y8b
 #
 #
-# This is an installation script for Qpoint (https://qpoint.io). Please run:
+# This is an installation script for Qtap (https://qpoint.io). Please run:
 #
 #     curl -s https://get.qpoint.io/install | sudo sh
 #
@@ -22,7 +22,7 @@
 set -eu
 
 # configurable variables
-VERSION=0.9.2
+VERSION=0.9.3
 
 # script variables
 OS=
@@ -64,7 +64,7 @@ success() {
 }
 
 download_url() {
-    printf "https://downloads.qpoint.io/qpoint/qpoint-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+    printf "https://downloads.qpoint.io/qpoint/qtap-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
 }
 
 setup() {
@@ -118,7 +118,7 @@ banner() {
 }
 
 install() {
-    action "installing Qpoint $(bold "v${VERSION}")"
+    action "installing Qtap $(bold "v${VERSION}")"
 
     if ! dir=$(mktemp -d); then
         error "failed to create temporary directory"
@@ -128,12 +128,12 @@ install() {
     # shellcheck disable=SC2064 # we want $dir to expand now
     trap "rm -rf '$dir'" EXIT
 
-    curl -fsSL "$(download_url)" >qpoint.tgz
-    tar -xzf qpoint.tgz
-    mv qpoint-* /usr/local/bin/qpoint
-    chmod +x /usr/local/bin/qpoint
+    curl -fsSL "$(download_url)" >qtap.tgz
+    tar -xzf qtap.tgz
+    mv qtap-* /usr/local/bin/qtap
+    chmod +x /usr/local/bin/qtap
 
-    success "successfully installed at $(bold "/usr/local/bin/qpoint")"
+    success "successfully installed at $(bold "/usr/local/bin/qtap")"
     printf '\n'
 }
 
@@ -143,9 +143,9 @@ usage_instructions() {
     echo "${DIM}2.${RESET} navigate to $(bold "Settings -> Installation") and copy the auth token"
     echo "${DIM}3.${RESET} verify that the installation is successful by running:"
     echo ""
-    echo "    sudo qpoint tap --registration-token $(bold "<auth-token>")"
+    echo "    sudo qtap --registration-token $(bold "<auth-token>")"
     echo ""
-    echo "${PURPLE}ℹ${RESET} to run qpoint as a service, follow the instructions at"
+    echo "${PURPLE}ℹ${RESET} to run qtap as a service, follow the instructions at"
     echo "    $(bold "https://docs.qpoint.io/installation/linux-binary#running-qtap-as-a-service")"
     echo ""
 }

@@ -22,7 +22,7 @@
 set -eu
 
 # configurable variables
-VERSION=0.9.2
+VERSION=0.9.3
 
 # script variables
 OS=
@@ -64,7 +64,7 @@ success() {
 }
 
 download_url() {
-    printf "https://downloads.qpoint.io/qpoint/qpoint-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+    printf "https://downloads.qpoint.io/qpoint/qtap-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
 }
 
 setup() {
@@ -118,7 +118,7 @@ banner() {
 }
 
 install() {
-    action "downloading Qpoint $(bold "v${VERSION}")"
+    action "downloading Qtap $(bold "v${VERSION}")"
 
     if ! dir=$(mktemp -d); then
         error "failed to create temporary directory"
@@ -128,19 +128,19 @@ install() {
     # shellcheck disable=SC2064 # we want $dir to expand now
     trap "rm -rf '$dir'" EXIT
 
-    curl -fsSL "$(download_url)" >qpoint.tgz
-    tar -xzf qpoint.tgz
-    mv qpoint-* qpoint
-    chmod +x qpoint
+    curl -fsSL "$(download_url)" >qtap.tgz
+    tar -xzf qtap.tgz
+    mv qtap-* qtap
+    chmod +x qtap
 
-    success "successfully extracted qpoint to $(bold "$(pwd)/qpoint")"
+    success "successfully extracted qtap to $(bold "$(pwd)/qtap")"
     printf '\n'
 }
 
 run() {
-    action "running Qpoint demo"
+    action "running Qtap demo"
     echo ""
-    ./qpoint
+    ./qtap
 }
 
 banner
