@@ -28,7 +28,7 @@
 set -eu
 
 # configurable variables
-VERSION=0.9.9
+VERSION=0.9.10
 
 # script variables
 OS=
