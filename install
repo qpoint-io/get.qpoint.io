@@ -28,7 +28,7 @@
 set -eu
 
 # configurable variables
-VERSION=0.9.10
+VERSION=${VERSION:-latest}
 
 # script variables
 OS=
@@ -70,7 +70,7 @@ success() {
 }
 
 download_url() {
-    printf "https://downloads.qpoint.io/qpoint/qtap-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+    printf "https://downloads.qpoint.io/qpoint/qtap-%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
 }
 
 setup() {
@@ -105,7 +105,13 @@ setup() {
     if [ "$(id -u)" != "0" ]; then
         error "please run this script as root
 
-    curl -s https://get.qpoint.io/install | sudo sh"
+    curl -s https://get.qpoint.io/install | sudo sh
+    
+alternatively, follow the manual installation instructions:
+
+    https://docs.qpoint.io/qtap/installation/linux-binary#manual-installation
+
+"
     fi
 }
 
@@ -131,7 +137,7 @@ banner() {
 }
 
 install() {
-    action "installing Qtap $(bold "v${VERSION}")"
+    action "installing Qtap [$(bold "${VERSION}")]"
 
     if ! dir=$(mktemp -d); then
         error "failed to create temporary directory"
@@ -139,14 +145,14 @@ install() {
 
     cd "$dir"
     # shellcheck disable=SC2064 # we want $dir to expand now
-    trap "rm -rf '$dir'" EXIT
+    trap "rm -rf '$dir'" EXIT INT
 
     curl -fsSL "$(download_url)" >qtap.tgz
     tar -xzf qtap.tgz
     mv qtap-* /usr/local/bin/qtap
     chmod +x /usr/local/bin/qtap
 
-    success "successfully installed at $(bold "/usr/local/bin/qtap")"
+    success "successfully installed $(bold "$(/usr/local/bin/qtap --version)") at $(bold "/usr/local/bin/qtap")"
     printf '\n'
 }
 
@@ -159,6 +165,7 @@ usage_instructions() {
     echo "    sudo qtap --registration-token $(bold "<auth-token>")"
     echo ""
     echo "${PURPLE}ℹ${RESET} to run qtap as a service, follow the instructions at"
+    echo ""
     echo "    $(bold "https://docs.qpoint.io/installation/linux-binary#running-qtap-as-a-service")"
     echo ""
 }

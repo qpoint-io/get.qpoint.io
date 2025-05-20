@@ -21,14 +21,14 @@
 #
 # This is an demo script for Qpoint (https://qpoint.io). Please run:
 #
-#     curl -s https://get.qpoint.io/install | sudo sh
+#     curl -s https://get.qpoint.io/demo | sudo sh
 #
 #
 
 set -eu
 
 # configurable variables
-VERSION=0.9.10
+VERSION=${VERSION:-latest}
 
 # script variables
 OS=
@@ -70,7 +70,7 @@ success() {
 }
 
 download_url() {
-    printf "https://downloads.qpoint.io/qpoint/qtap-v%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+    printf "https://downloads.qpoint.io/qpoint/qtap-%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
 }
 
 setup() {
@@ -101,12 +101,6 @@ setup() {
         error "unsupported architecture $(bold "$(uname -m)")"
         ;;
     esac
-
-    if [ "$(id -u)" != "0" ]; then
-        error "please run this script as root
-
-    curl -s https://get.qpoint.io/install | sudo sh"
-    fi
 }
 
 banner() {
@@ -131,26 +125,40 @@ banner() {
 }
 
 install() {
-    action "downloading Qtap $(bold "v${VERSION}")"
+    action "downloading Qtap [$(bold "${VERSION}")]"
 
     if ! dir=$(mktemp -d); then
         error "failed to create temporary directory"
     fi
 
     cd "$dir"
-    # shellcheck disable=SC2064 # we want $dir to expand now
-    trap "rm -rf '$dir'" EXIT
+    if [ "$(id -u)" = "0" ]; then
+        # if we are not running as root, we should NOT clean up
+        # so that the user can run qtap manually
+
+        # shellcheck disable=SC2064 # we want $dir to expand now
+        trap "rm -rf '$dir'" EXIT INT
+    fi
 
     curl -fsSL "$(download_url)" >qtap.tgz
     tar -xzf qtap.tgz
     mv qtap-* qtap
     chmod +x qtap
 
-    success "successfully extracted qtap to $(bold "$(pwd)/qtap")"
+    success "successfully extracted $(bold "$(./qtap --version)") to $(bold "$(pwd)/qtap")"
     printf '\n'
 }
 
 run() {
+    if [ "$(id -u)" != "0" ]; then
+        action "please run qtap as root:
+
+    $(bold "sudo $(pwd)/qtap")
+
+"
+        exit 0
+    fi
+
     action "running Qtap demo"
     echo ""
     ./qtap
