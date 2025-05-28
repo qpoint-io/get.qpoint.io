@@ -153,7 +153,7 @@ run() {
     if [ "$(id -u)" != "0" ]; then
         action "please run qtap as root:
 
-    $(bold "sudo $(pwd)/qtap")
+    $(bold "sudo $(pwd)/qtap [args...]")
 
 "
         exit 0
@@ -161,10 +161,10 @@ run() {
 
     action "running Qtap demo"
     echo ""
-    ./qtap
+    ./qtap "$@"
 }
 
 banner
 setup
 install
-run
+run "$@"
