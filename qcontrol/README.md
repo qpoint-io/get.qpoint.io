@@ -8,7 +8,7 @@ curl -s https://get.qpoint.io/qcontrol/install | sh
 ```
 
 ```sh
-# downloads to a tmp dir which is cleaned up afterwards
+# downloads to current directory to be run as ./qcontrol
 curl -s https://get.qpoint.io/qcontrol/demo | sh
 ```
 
