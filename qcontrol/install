@@ -1,0 +1,188 @@
+#!/usr/bin/env sh
+
+#
+#
+#            ••••••••••
+#       ••••••••••••••••••••
+#     ••••••••••••••••••••••••
+#   ••••••••••••••••••••••••••••
+#  ••••••••••••••••••••••••••••••
+# ••••••••••••••••••••••••••••••••
+# ••••••••••••••••••••••••••••••••
+#  ••••••••••••••••   •••••••••••
+#   •••••••••••••••••   ••••••••
+#     •••••••••••••••••   ••••
+#       ••••••••••••••••••••
+#            ••••••••••      *
+#
+#          ┏┓ ┏┓ ┏┓ ┳ ┳┓┏┳┓
+#          ┃┃ ┃┃ ┃┃ ┃ ┃┃ ┃
+#          ┗┣ ┣┛ ┗┛ ┻ ┛┗ ┻
+#
+# This is an installation script for Qcontrol (https://qpoint.io). Please run:
+#
+#     curl -s https://get.qpoint.io/qcontrol/install | sh
+#
+#
+
+set -eu
+
+# configurable variables
+VERSION=${VERSION:-latest}
+
+# script variables
+OS=
+ARCH=
+INSTALL_PATH=
+
+RED=
+GREEN=
+PURPLE=
+BOLD=
+DIM=
+RESET=
+RESET_BOLD=
+# terminal output - use colors
+if [ -t 1 ]; then
+    RED='[0;31m'
+    GREEN='[0;32m'
+    PURPLE='[0;35m'
+    BOLD='[1m'
+    DIM='[2m'
+    RESET_BOLD='[22m'
+    RESET='[0m'
+fi
+
+bold() {
+    printf "${BOLD}%s${RESET_BOLD}" "$*"
+}
+
+action() {
+    printf "${PURPLE}→ %s${RESET}\n" "$*"
+}
+
+error() {
+    printf >&2 "${RED}✗ %s${RESET}\n" "$*"
+}
+
+fatal() {
+    error "$*"
+    exit 1
+}
+
+success() {
+    printf "${GREEN}✓ %s${RESET}\n" "$*"
+}
+
+download_url() {
+    printf "https://downloads.qpoint.io/qcontrol/qcontrol-%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+}
+
+setup() {
+    case "$(uname -sr)" in
+    Linux*)
+        OS="linux"
+        ;;
+
+    Darwin*)
+        OS="macos"
+        ;;
+
+    MINGW* | MSYS* | CYGWIN*)
+        OS="win"
+        ;;
+
+    *)
+        fatal "unsupported operating system $(bold "$(uname -sr)")"
+        ;;
+    esac
+
+    case "$(uname -m)" in
+    x86_64)
+        ARCH="amd64"
+        ;;
+
+    aarch64 | arm64)
+        ARCH="arm64"
+        ;;
+
+    *)
+        fatal "unsupported architecture $(bold "$(uname -m)")"
+        ;;
+    esac
+
+}
+
+banner() {
+    echo ""
+    echo "${PURPLE}           ••••••••••            ${RESET}"
+    echo "${PURPLE}      ••••••••••••••••••••       ${RESET}"
+    echo "${PURPLE}    ••••••••••••••••••••••••     ${RESET}"
+    echo "${PURPLE}  ••••••••••••••••••••••••••••   ${RESET}"
+    echo "${PURPLE} ••••••••••••••••••••••••••••••  ${RESET}"
+    echo "${PURPLE}•••••••••••••••••••••••••••••••• ${RESET}"
+    echo "${PURPLE}•••••••••••••••••••••••••••••••• ${RESET}"
+    echo "${PURPLE} ••••••••••••••••   •••••••••••  ${RESET}"
+    echo "${PURPLE}  •••••••••••••••••   ••••••••   ${RESET}"
+    echo "${PURPLE}    •••••••••••••••••   ••••     ${RESET}"
+    echo "${PURPLE}      ••••••••••••••••••••       ${RESET}"
+    echo "${PURPLE}           ••••••••••      ${BOLD}*${RESET}"
+    echo ""
+    echo "${PURPLE}        ┏┓ ┏┓ ┏┓ ┳ ┳┓┏┳┓         ${RESET}"
+    echo "${PURPLE}        ┃┃ ┃┃ ┃┃ ┃ ┃┃ ┃          ${RESET}"
+    echo "${PURPLE}        ┗┣ ┣┛ ┗┛ ┻ ┛┗ ┻          ${RESET}"
+    echo ""
+}
+
+install() {
+    action "installing Qcontrol [$(bold "${VERSION}")]"
+
+    if ! dir=$(mktemp -d); then
+        fatal "failed to create temporary directory"
+    fi
+
+    # shellcheck disable=SC2064 # we want $dir to expand now
+    trap "rm -rf '$dir'" EXIT INT
+
+    curl -fsSL "$(download_url)" >"${dir}/qcontrol.tgz"
+    tar -xzf "${dir}/qcontrol.tgz" -C "$dir"
+    chmod +x "${dir}/qcontrol"
+
+    INSTALL_PATH=""
+
+    # try /usr/local/bin first
+    if mv "${dir}/qcontrol" /usr/local/bin/qcontrol 2>/dev/null; then
+        INSTALL_PATH="/usr/local/bin/qcontrol"
+    # try current directory if /usr/local/bin failed
+    elif [ ! -e "./qcontrol" ] && mv "${dir}/qcontrol" "./qcontrol" 2>/dev/null; then
+        INSTALL_PATH="./qcontrol"
+    # fall back to /tmp
+    else
+        mv "${dir}/qcontrol" /tmp/qcontrol
+        INSTALL_PATH="/tmp/qcontrol"
+    fi
+
+    success "successfully installed $(bold "$("${INSTALL_PATH}" --version)") at $(bold "${INSTALL_PATH}")"
+    printf '\n'
+
+    if [ "${INSTALL_PATH}" != "/usr/local/bin/qcontrol" ]; then
+        error "insufficient permissions, please move the binary manually:"
+        printf '\n'
+        printf "    sudo mv %s /usr/local/bin/\n" "${INSTALL_PATH}"
+        printf '\n'
+    fi
+}
+
+usage_instructions() {
+    action "usage instructions"
+    printf '\n'
+    "${INSTALL_PATH}" --help
+}
+
+banner
+setup
+install
+
+if [ "${INSTALL_PATH}" = "/usr/local/bin/qcontrol" ]; then
+    usage_instructions
+fi
