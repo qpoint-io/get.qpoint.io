@@ -21,7 +21,7 @@
 #
 # This is a demo script for Qcontrol (https://qpoint.io). Please run:
 #
-#     curl -s https://get.qpoint.io/qcontrol/demo | sudo sh
+#     curl -s https://get.qpoint.io/qcontrol/demo | sh
 #
 #
 
