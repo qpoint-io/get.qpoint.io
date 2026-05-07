@@ -21,11 +21,7 @@
 #
 # This is an installation script for Qcontrol (https://qpoint.io). Please run:
 #
-#     curl -s https://get.qpoint.io/qcontrol/install | sh
-#
-# For a system-wide installation, run:
-#
-#     curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system
+#     curl -s https://get.qpoint.io/qcontrol/install | sudo sh
 #
 #
 
@@ -38,7 +34,6 @@ VERSION=${VERSION:-latest}
 OS=
 ARCH=
 INSTALL_PATH=
-SCOPE=
 
 RED=
 GREEN=
@@ -84,28 +79,16 @@ download_url() {
 }
 
 parse_args() {
-    if [ "$#" -gt 1 ]; then
-        usage_error "too many arguments"
+    if [ "$#" -gt 0 ]; then
+        usage_error "this script does not accept arguments"
     fi
-
-    SCOPE=${1:-user}
-
-    case "$SCOPE" in
-    user | system)
-        ;;
-    *)
-        usage_error "unsupported install scope $(bold "$SCOPE")"
-        ;;
-    esac
 }
 
 usage_error() {
     error "$*"
     printf >&2 '\n'
     printf >&2 'usage:\n\n'
-    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sh\n'
-    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
-    printf >&2 'accepted scopes: user, system\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh\n'
     exit 1
 }
 
@@ -114,18 +97,14 @@ resolve_install_path() {
 }
 
 install_dir() {
-    if [ "$SCOPE" = "user" ]; then
-        printf '%s' "$HOME/.local/bin"
-    else
-        printf '%s' "${QCONTROL_TEST_SYSTEM_BIN:-/usr/local/bin}"
-    fi
+    printf '%s' "${QCONTROL_TEST_SYSTEM_BIN:-/usr/local/bin}"
 }
 
 install_target_error() {
     error "$*"
     printf >&2 '\n'
     printf >&2 'run the system install with sudo:\n\n'
-    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh\n\n'
     exit 1
 }
 
