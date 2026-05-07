@@ -80,6 +80,20 @@ QCONTROL
 chmod +x "$out/qcontrol"
 SH
     chmod +x "$fakebin/tar"
+
+    cat >"$fakebin/mv" <<'SH'
+#!/usr/bin/env sh
+
+set -eu
+
+if [ "${2:-}" = "/usr/local/bin/qcontrol" ]; then
+    printf 'refusing to write to real /usr/local/bin/qcontrol in tests\n' >&2
+    exit 1
+fi
+
+/bin/mv "$@"
+SH
+    chmod +x "$fakebin/mv"
 }
 
 setup_test() {
@@ -88,6 +102,7 @@ setup_test() {
 
     TEST_HOME="$TEST_SANDBOX/home"
     TEST_FAKEBIN="$TEST_SANDBOX/bin"
+    TEST_SYSTEM_BIN="$TEST_SANDBOX/system-bin"
     TEST_WORKDIR="$TEST_SANDBOX/work"
     TEST_OUTPUT="$TEST_SANDBOX/output"
 
@@ -102,7 +117,7 @@ teardown_test() {
 run_install() {
     (
         cd "$TEST_WORKDIR"
-        QCONTROL_TEST_MARKER="$TEST_SANDBOX" HOME="$TEST_HOME" PATH="$TEST_FAKEBIN:$PATH" sh "$SCRIPT" "$@" >"$TEST_OUTPUT" 2>&1
+        QCONTROL_TEST_MARKER="$TEST_SANDBOX" QCONTROL_TEST_SYSTEM_BIN="$TEST_SYSTEM_BIN" HOME="$TEST_HOME" PATH="$TEST_FAKEBIN:$PATH" sh "$SCRIPT" "$@" >"$TEST_OUTPUT" 2>&1
     )
 }
 
@@ -185,6 +200,43 @@ test_unwritable_user_bin_fails_before_download() {
     teardown_test
 }
 
+test_system_scope_installs_to_system_bin() {
+    setup_test
+    mkdir -p "$TEST_SYSTEM_BIN"
+
+    if ! run_install system; then
+        cat "$TEST_OUTPUT" >&2
+        fail 'install command failed'
+    fi
+
+    output=$(cat "$TEST_OUTPUT")
+
+    [ -x "$TEST_SYSTEM_BIN/qcontrol" ] || fail 'expected qcontrol in system bin'
+    assert_not_exists "$TEST_WORKDIR/qcontrol" 'expected no current-directory fallback'
+    assert_contains "$output" 'successfully installed qcontrol test version at'
+    assert_contains "$output" "$TEST_SYSTEM_BIN/qcontrol"
+    assert_contains "$output" 'qcontrol help'
+
+    teardown_test
+}
+
+test_missing_system_bin_fails_before_download() {
+    setup_test
+
+    if run_install system; then
+        fail 'expected install command to fail'
+    fi
+
+    output=$(cat "$TEST_OUTPUT")
+
+    assert_not_exists "$TEST_SANDBOX/curl-called" 'expected no download attempt'
+    assert_not_exists "$TEST_WORKDIR/qcontrol" 'expected no current-directory fallback'
+    assert_contains "$output" "$TEST_SYSTEM_BIN"
+    assert_contains "$output" 'curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system'
+
+    teardown_test
+}
+
 test_default_scope_installs_to_user_bin
 printf 'ok - default scope installs to user bin\n'
 test_explicit_user_scope_installs_to_user_bin
@@ -193,3 +245,7 @@ test_missing_user_bin_fails_before_download
 printf 'ok - missing user bin fails before download\n'
 test_unwritable_user_bin_fails_before_download
 printf 'ok - unwritable user bin fails before download\n'
+test_system_scope_installs_to_system_bin
+printf 'ok - system scope installs to system bin\n'
+test_missing_system_bin_fails_before_download
+printf 'ok - missing system bin fails before download\n'

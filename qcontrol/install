@@ -84,18 +84,14 @@ parse_args() {
 }
 
 resolve_install_path() {
-    if [ "$SCOPE" = "user" ]; then
-        INSTALL_PATH="$HOME/.local/bin/qcontrol"
-    else
-        INSTALL_PATH="/usr/local/bin/qcontrol"
-    fi
+    INSTALL_PATH="$(install_dir)/qcontrol"
 }
 
 install_dir() {
     if [ "$SCOPE" = "user" ]; then
         printf '%s' "$HOME/.local/bin"
     else
-        printf '%s' "/usr/local/bin"
+        printf '%s' "${QCONTROL_TEST_SYSTEM_BIN:-/usr/local/bin}"
     fi
 }
 
