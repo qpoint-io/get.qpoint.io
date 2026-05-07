@@ -23,6 +23,10 @@
 #
 #     curl -s https://get.qpoint.io/qcontrol/install | sh
 #
+# For a system-wide installation, run:
+#
+#     curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system
+#
 #
 
 set -eu
@@ -34,6 +38,7 @@ VERSION=${VERSION:-latest}
 OS=
 ARCH=
 INSTALL_PATH=
+SCOPE=
 
 RED=
 GREEN=
@@ -76,6 +81,64 @@ success() {
 
 download_url() {
     printf "https://downloads.qpoint.io/qcontrol/qcontrol-%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+}
+
+parse_args() {
+    if [ "$#" -gt 1 ]; then
+        usage_error "too many arguments"
+    fi
+
+    SCOPE=${1:-user}
+
+    case "$SCOPE" in
+    user | system)
+        ;;
+    *)
+        usage_error "unsupported install scope $(bold "$SCOPE")"
+        ;;
+    esac
+}
+
+usage_error() {
+    error "$*"
+    printf >&2 '\n'
+    printf >&2 'usage:\n\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sh\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
+    printf >&2 'accepted scopes: user, system\n'
+    exit 1
+}
+
+resolve_install_path() {
+    INSTALL_PATH="$(install_dir)/qcontrol"
+}
+
+install_dir() {
+    if [ "$SCOPE" = "user" ]; then
+        printf '%s' "$HOME/.local/bin"
+    else
+        printf '%s' "${QCONTROL_TEST_SYSTEM_BIN:-/usr/local/bin}"
+    fi
+}
+
+install_target_error() {
+    error "$*"
+    printf >&2 '\n'
+    printf >&2 'run the system install with sudo:\n\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
+    exit 1
+}
+
+check_install_target() {
+    dir=$(install_dir)
+
+    if [ ! -d "$dir" ]; then
+        install_target_error "install directory $(bold "$dir") does not exist"
+    fi
+
+    if [ ! -w "$dir" ]; then
+        install_target_error "install directory $(bold "$dir") is not writable"
+    fi
 }
 
 setup() {
@@ -137,6 +200,9 @@ banner() {
 install() {
     action "installing Qcontrol [$(bold "${VERSION}")]"
 
+    resolve_install_path
+    check_install_target
+
     if ! dir=$(mktemp -d); then
         fatal "failed to create temporary directory"
     fi
@@ -148,29 +214,10 @@ install() {
     tar -xzf "${dir}/qcontrol.tgz" -C "$dir"
     chmod +x "${dir}/qcontrol"
 
-    INSTALL_PATH=""
-
-    # try /usr/local/bin first
-    if mv "${dir}/qcontrol" /usr/local/bin/qcontrol 2>/dev/null; then
-        INSTALL_PATH="/usr/local/bin/qcontrol"
-    # try current directory if /usr/local/bin failed
-    elif [ ! -e "./qcontrol" ] && mv "${dir}/qcontrol" "./qcontrol" 2>/dev/null; then
-        INSTALL_PATH="./qcontrol"
-    # fall back to /tmp
-    else
-        mv "${dir}/qcontrol" /tmp/qcontrol
-        INSTALL_PATH="/tmp/qcontrol"
-    fi
+    mv "${dir}/qcontrol" "$INSTALL_PATH"
 
     success "successfully installed $(bold "$("${INSTALL_PATH}" --version)") at $(bold "${INSTALL_PATH}")"
     printf '\n'
-
-    if [ "${INSTALL_PATH}" != "/usr/local/bin/qcontrol" ]; then
-        error "insufficient permissions, please move the binary manually:"
-        printf '\n'
-        printf "    sudo mv %s /usr/local/bin/\n" "${INSTALL_PATH}"
-        printf '\n'
-    fi
 }
 
 usage_instructions() {
@@ -180,9 +227,7 @@ usage_instructions() {
 }
 
 banner
+parse_args "$@"
 setup
 install
-
-if [ "${INSTALL_PATH}" = "/usr/local/bin/qcontrol" ]; then
-    usage_instructions
-fi
+usage_instructions
