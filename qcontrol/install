@@ -83,6 +83,42 @@ parse_args() {
     SCOPE=${1:-user}
 }
 
+resolve_install_path() {
+    if [ "$SCOPE" = "user" ]; then
+        INSTALL_PATH="$HOME/.local/bin/qcontrol"
+    else
+        INSTALL_PATH="/usr/local/bin/qcontrol"
+    fi
+}
+
+install_dir() {
+    if [ "$SCOPE" = "user" ]; then
+        printf '%s' "$HOME/.local/bin"
+    else
+        printf '%s' "/usr/local/bin"
+    fi
+}
+
+install_target_error() {
+    error "$*"
+    printf >&2 '\n'
+    printf >&2 'run the system install with sudo:\n\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
+    exit 1
+}
+
+check_install_target() {
+    dir=$(install_dir)
+
+    if [ ! -d "$dir" ]; then
+        install_target_error "install directory $(bold "$dir") does not exist"
+    fi
+
+    if [ ! -w "$dir" ]; then
+        install_target_error "install directory $(bold "$dir") is not writable"
+    fi
+}
+
 setup() {
     case "$(uname -sr)" in
     Linux*)
@@ -142,6 +178,9 @@ banner() {
 install() {
     action "installing Qcontrol [$(bold "${VERSION}")]"
 
+    resolve_install_path
+    check_install_target
+
     if ! dir=$(mktemp -d); then
         fatal "failed to create temporary directory"
     fi
@@ -152,12 +191,6 @@ install() {
     curl -fsSL "$(download_url)" >"${dir}/qcontrol.tgz"
     tar -xzf "${dir}/qcontrol.tgz" -C "$dir"
     chmod +x "${dir}/qcontrol"
-
-    if [ "$SCOPE" = "user" ]; then
-        INSTALL_PATH="$HOME/.local/bin/qcontrol"
-    else
-        INSTALL_PATH="/usr/local/bin/qcontrol"
-    fi
 
     mv "${dir}/qcontrol" "$INSTALL_PATH"
 

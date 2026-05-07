@@ -20,6 +20,13 @@ assert_contains() {
     esac
 }
 
+assert_not_exists() {
+    path=$1
+    message=$2
+
+    [ ! -e "$path" ] || fail "$message"
+}
+
 make_fake_tools() {
     fakebin=$1
 
@@ -75,65 +82,114 @@ SH
     chmod +x "$fakebin/tar"
 }
 
+setup_test() {
+    TEST_SANDBOX=$(mktemp -d)
+    trap 'rm -rf "$TEST_SANDBOX"' EXIT INT
+
+    TEST_HOME="$TEST_SANDBOX/home"
+    TEST_FAKEBIN="$TEST_SANDBOX/bin"
+    TEST_WORKDIR="$TEST_SANDBOX/work"
+    TEST_OUTPUT="$TEST_SANDBOX/output"
+
+    mkdir -p "$TEST_HOME" "$TEST_FAKEBIN" "$TEST_WORKDIR"
+    make_fake_tools "$TEST_FAKEBIN"
+}
+
+teardown_test() {
+    rm -rf "$TEST_SANDBOX"
+}
+
+run_install() {
+    (
+        cd "$TEST_WORKDIR"
+        QCONTROL_TEST_MARKER="$TEST_SANDBOX" HOME="$TEST_HOME" PATH="$TEST_FAKEBIN:$PATH" sh "$SCRIPT" "$@" >"$TEST_OUTPUT" 2>&1
+    )
+}
+
 test_default_scope_installs_to_user_bin() {
-    sandbox=$(mktemp -d)
-    trap 'rm -rf "$sandbox"' EXIT INT
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin"
 
-    home="$sandbox/home"
-    fakebin="$sandbox/bin"
-    workdir="$sandbox/work"
-    output_file="$sandbox/output"
-
-    mkdir -p "$home/.local/bin" "$fakebin" "$workdir"
-    make_fake_tools "$fakebin"
-
-    if ! (
-        cd "$workdir"
-        QCONTROL_TEST_MARKER="$sandbox" HOME="$home" PATH="$fakebin:$PATH" sh "$SCRIPT" >"$output_file" 2>&1
-    ); then
-        cat "$output_file" >&2
+    if ! run_install; then
+        cat "$TEST_OUTPUT" >&2
         fail 'install command failed'
     fi
 
-    output=$(cat "$output_file")
+    output=$(cat "$TEST_OUTPUT")
 
-    [ -x "$home/.local/bin/qcontrol" ] || fail 'expected qcontrol in user bin'
-    [ ! -e "$workdir/qcontrol" ] || fail 'expected no current-directory fallback'
+    [ -x "$TEST_HOME/.local/bin/qcontrol" ] || fail 'expected qcontrol in user bin'
+    [ ! -e "$TEST_WORKDIR/qcontrol" ] || fail 'expected no current-directory fallback'
     assert_contains "$output" 'successfully installed qcontrol test version at'
-    assert_contains "$output" "$home/.local/bin/qcontrol"
+    assert_contains "$output" "$TEST_HOME/.local/bin/qcontrol"
     assert_contains "$output" 'qcontrol help'
+
+    teardown_test
 }
 
 test_explicit_user_scope_installs_to_user_bin() {
-    sandbox=$(mktemp -d)
-    trap 'rm -rf "$sandbox"' EXIT INT
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin"
 
-    home="$sandbox/home"
-    fakebin="$sandbox/bin"
-    workdir="$sandbox/work"
-    output_file="$sandbox/output"
-
-    mkdir -p "$home/.local/bin" "$fakebin" "$workdir"
-    make_fake_tools "$fakebin"
-
-    if ! (
-        cd "$workdir"
-        QCONTROL_TEST_MARKER="$sandbox" HOME="$home" PATH="$fakebin:$PATH" sh "$SCRIPT" user >"$output_file" 2>&1
-    ); then
-        cat "$output_file" >&2
+    if ! run_install user; then
+        cat "$TEST_OUTPUT" >&2
         fail 'install command failed'
     fi
 
-    output=$(cat "$output_file")
+    output=$(cat "$TEST_OUTPUT")
 
-    [ -x "$home/.local/bin/qcontrol" ] || fail 'expected qcontrol in user bin'
-    [ ! -e "$workdir/qcontrol" ] || fail 'expected no current-directory fallback'
+    [ -x "$TEST_HOME/.local/bin/qcontrol" ] || fail 'expected qcontrol in user bin'
+    [ ! -e "$TEST_WORKDIR/qcontrol" ] || fail 'expected no current-directory fallback'
     assert_contains "$output" 'successfully installed qcontrol test version at'
-    assert_contains "$output" "$home/.local/bin/qcontrol"
+    assert_contains "$output" "$TEST_HOME/.local/bin/qcontrol"
     assert_contains "$output" 'qcontrol help'
+
+    teardown_test
+}
+
+test_missing_user_bin_fails_before_download() {
+    setup_test
+
+    if run_install; then
+        fail 'expected install command to fail'
+    fi
+
+    output=$(cat "$TEST_OUTPUT")
+
+    assert_not_exists "$TEST_SANDBOX/curl-called" 'expected no download attempt'
+    assert_not_exists "$TEST_WORKDIR/qcontrol" 'expected no current-directory fallback'
+    assert_contains "$output" "$TEST_HOME/.local/bin"
+    assert_contains "$output" 'curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system'
+
+    teardown_test
+}
+
+test_unwritable_user_bin_fails_before_download() {
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin"
+    chmod 555 "$TEST_HOME/.local/bin"
+
+    if run_install; then
+        chmod 755 "$TEST_HOME/.local/bin"
+        fail 'expected install command to fail'
+    fi
+
+    chmod 755 "$TEST_HOME/.local/bin"
+    output=$(cat "$TEST_OUTPUT")
+
+    assert_not_exists "$TEST_SANDBOX/curl-called" 'expected no download attempt'
+    assert_not_exists "$TEST_WORKDIR/qcontrol" 'expected no current-directory fallback'
+    assert_contains "$output" "$TEST_HOME/.local/bin"
+    assert_contains "$output" 'is not writable'
+    assert_contains "$output" 'curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system'
+
+    teardown_test
 }
 
 test_default_scope_installs_to_user_bin
 printf 'ok - default scope installs to user bin\n'
 test_explicit_user_scope_installs_to_user_bin
 printf 'ok - explicit user scope installs to user bin\n'
+test_missing_user_bin_fails_before_download
+printf 'ok - missing user bin fails before download\n'
+test_unwritable_user_bin_fails_before_download
+printf 'ok - unwritable user bin fails before download\n'
