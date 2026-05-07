@@ -19,9 +19,9 @@
 #          ┃┃ ┃┃ ┃┃ ┃ ┃┃ ┃
 #          ┗┣ ┣┛ ┗┛ ┻ ┛┗ ┻
 #
-# This is a demo script for Qcontrol (https://qpoint.io). Please run:
+# This is a download script for Qcontrol (https://qpoint.io). Please run:
 #
-#     curl -s https://get.qpoint.io/qcontrol/demo | sh
+#     curl -s https://get.qpoint.io/qcontrol/download | sh
 #
 #
 
@@ -132,7 +132,7 @@ banner() {
     echo ""
 }
 
-install() {
+download() {
     BINARY="./qcontrol"
 
     action "downloading Qcontrol [$(bold "${VERSION}")]"
@@ -166,6 +166,6 @@ run() {
 
 banner
 setup
-install
+download
 
 run "--help"
