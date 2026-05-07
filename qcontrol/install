@@ -23,6 +23,10 @@
 #
 #     curl -s https://get.qpoint.io/qcontrol/install | sh
 #
+# For a system-wide installation, run:
+#
+#     curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system
+#
 #
 
 set -eu
@@ -80,7 +84,29 @@ download_url() {
 }
 
 parse_args() {
+    if [ "$#" -gt 1 ]; then
+        usage_error "too many arguments"
+    fi
+
     SCOPE=${1:-user}
+
+    case "$SCOPE" in
+    user | system)
+        ;;
+    *)
+        usage_error "unsupported install scope $(bold "$SCOPE")"
+        ;;
+    esac
+}
+
+usage_error() {
+    error "$*"
+    printf >&2 '\n'
+    printf >&2 'usage:\n\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sh\n'
+    printf >&2 '    curl -s https://get.qpoint.io/qcontrol/install | sudo sh -s -- system\n\n'
+    printf >&2 'accepted scopes: user, system\n'
+    exit 1
 }
 
 resolve_install_path() {

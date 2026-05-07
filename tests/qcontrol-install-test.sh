@@ -37,6 +37,7 @@ set -eu
 
 : "${QCONTROL_TEST_MARKER:?}"
 touch "$QCONTROL_TEST_MARKER/curl-called"
+printf '%s\n' "$*" >"$QCONTROL_TEST_MARKER/curl-args"
 printf 'fake archive'
 SH
     chmod +x "$fakebin/curl"
@@ -237,6 +238,62 @@ test_missing_system_bin_fails_before_download() {
     teardown_test
 }
 
+test_invalid_scope_fails_before_download() {
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin" "$TEST_SYSTEM_BIN"
+
+    if run_install banana; then
+        fail 'expected install command to fail'
+    fi
+
+    output=$(cat "$TEST_OUTPUT")
+
+    assert_not_exists "$TEST_SANDBOX/curl-called" 'expected no download attempt'
+    assert_not_exists "$TEST_HOME/.local/bin/qcontrol" 'expected no user install'
+    assert_not_exists "$TEST_SYSTEM_BIN/qcontrol" 'expected no system install'
+    assert_contains "$output" 'accepted scopes: user, system'
+
+    teardown_test
+}
+
+test_extra_argument_fails_before_download() {
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin" "$TEST_SYSTEM_BIN"
+
+    if run_install user extra; then
+        fail 'expected install command to fail'
+    fi
+
+    output=$(cat "$TEST_OUTPUT")
+
+    assert_not_exists "$TEST_SANDBOX/curl-called" 'expected no download attempt'
+    assert_not_exists "$TEST_HOME/.local/bin/qcontrol" 'expected no user install'
+    assert_not_exists "$TEST_SYSTEM_BIN/qcontrol" 'expected no system install'
+    assert_contains "$output" 'accepted scopes: user, system'
+
+    teardown_test
+}
+
+test_version_env_is_used_in_download_url() {
+    setup_test
+    mkdir -p "$TEST_HOME/.local/bin"
+
+    VERSION=v0.9.10
+    export VERSION
+    if ! run_install; then
+        unset VERSION
+        cat "$TEST_OUTPUT" >&2
+        fail 'install command failed'
+    fi
+    unset VERSION
+
+    curl_args=$(cat "$TEST_SANDBOX/curl-args")
+
+    assert_contains "$curl_args" 'qcontrol-v0.9.10-'
+
+    teardown_test
+}
+
 test_default_scope_installs_to_user_bin
 printf 'ok - default scope installs to user bin\n'
 test_explicit_user_scope_installs_to_user_bin
@@ -249,3 +306,9 @@ test_system_scope_installs_to_system_bin
 printf 'ok - system scope installs to system bin\n'
 test_missing_system_bin_fails_before_download
 printf 'ok - missing system bin fails before download\n'
+test_invalid_scope_fails_before_download
+printf 'ok - invalid scope fails before download\n'
+test_extra_argument_fails_before_download
+printf 'ok - extra argument fails before download\n'
+test_version_env_is_used_in_download_url
+printf 'ok - version env is used in download url\n'
