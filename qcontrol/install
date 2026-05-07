@@ -34,6 +34,7 @@ VERSION=${VERSION:-latest}
 OS=
 ARCH=
 INSTALL_PATH=
+SCOPE=
 
 RED=
 GREEN=
@@ -76,6 +77,10 @@ success() {
 
 download_url() {
     printf "https://downloads.qpoint.io/qcontrol/qcontrol-%s-%s-%s.tgz" "$VERSION" "$OS" "$ARCH"
+}
+
+parse_args() {
+    SCOPE=${1:-user}
 }
 
 setup() {
@@ -148,29 +153,16 @@ install() {
     tar -xzf "${dir}/qcontrol.tgz" -C "$dir"
     chmod +x "${dir}/qcontrol"
 
-    INSTALL_PATH=""
-
-    # try /usr/local/bin first
-    if mv "${dir}/qcontrol" /usr/local/bin/qcontrol 2>/dev/null; then
-        INSTALL_PATH="/usr/local/bin/qcontrol"
-    # try current directory if /usr/local/bin failed
-    elif [ ! -e "./qcontrol" ] && mv "${dir}/qcontrol" "./qcontrol" 2>/dev/null; then
-        INSTALL_PATH="./qcontrol"
-    # fall back to /tmp
+    if [ "$SCOPE" = "user" ]; then
+        INSTALL_PATH="$HOME/.local/bin/qcontrol"
     else
-        mv "${dir}/qcontrol" /tmp/qcontrol
-        INSTALL_PATH="/tmp/qcontrol"
+        INSTALL_PATH="/usr/local/bin/qcontrol"
     fi
+
+    mv "${dir}/qcontrol" "$INSTALL_PATH"
 
     success "successfully installed $(bold "$("${INSTALL_PATH}" --version)") at $(bold "${INSTALL_PATH}")"
     printf '\n'
-
-    if [ "${INSTALL_PATH}" != "/usr/local/bin/qcontrol" ]; then
-        error "insufficient permissions, please move the binary manually:"
-        printf '\n'
-        printf "    sudo mv %s /usr/local/bin/\n" "${INSTALL_PATH}"
-        printf '\n'
-    fi
 }
 
 usage_instructions() {
@@ -180,9 +172,7 @@ usage_instructions() {
 }
 
 banner
+parse_args "$@"
 setup
 install
-
-if [ "${INSTALL_PATH}" = "/usr/local/bin/qcontrol" ]; then
-    usage_instructions
-fi
+usage_instructions
