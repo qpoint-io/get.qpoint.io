@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Download qcontrol · Qpoint</title>
+<meta name="description" content="Install qcontrol — a single binary for macOS, Linux, or Windows." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ---- tokens pulled from www.qpoint.io tailwind/styleguide layer ---- */
+  :root {
+    --grape:      #895AE8;  /* grape / grape-500 */
+    --grape-600:  #7742E2;
+    --grape-500:  #895AE8;
+    --grape-400:  #AB86F6;
+    --grape-200:  #D7CAFE;
+    --grape-100:  #EFEBFC;
+    --grape-50:   #F9F7FF;
+    --grey-900:   #111111;
+    --grey-700:   #3a3a3a;
+    --grey-600:   #565454;
+    --grey-400:   #9E9E9E;
+    --grey-300:   #D4D4D4;
+    --grey-200:   #E8E8E8;
+    --grey-100:   #F5F5F5;
+    --white:      #ffffff;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--white);
+    color: var(--grey-600);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--grape-500); text-decoration: none; }
+  a:hover { color: var(--grey-900); }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  @media (min-width: 1024px) { .page { padding: 0 48px; } }
+
+  /* ---- real qpoint header (reproduced from www AppNav + HorizontalLockup) ---- */
+  .site-nav { border-bottom: 1px solid var(--grey-200); }
+  .site-nav .page { display: flex; align-items: center; height: 80px; gap: 48px; }
+
+  /* logo lockup: Q mark + QPOINT, divider, "The AI Agent Company" */
+  .lockup { display: flex; align-items: center; gap: 16px; color: #000; min-width: 140px; }
+  .lockup-q { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .logo-ic { width: 20px; height: 20px; color: #000; transition: color .3s ease; margin-right: 4px; }
+  .lockup:hover .logo-ic { color: var(--grape); }
+  .lockup-name { text-transform: uppercase; font-weight: 700; font-size: 11px; letter-spacing: 0.13em; color: #000; }
+  .lockup-div { border-left: 1px solid var(--grey-300); height: 50px; }
+  .lockup-tag { font-size: 13px; font-weight: 700; line-height: 14px; color: #000; }
+  .lockup-tag .grape { color: var(--grape); white-space: nowrap; }
+
+  /* desktop nav */
+  .nav-menu { display: flex; align-items: center; flex: 1; font-size: 15px; }
+  .nav-links { display: flex; gap: 40px; align-items: center; }
+  .nav-menu a, .nav-menu button { color: var(--grey-600); background: none; border: 0; cursor: pointer;
+                                  font-family: var(--sans); font-size: 15px; transition: color .2s ease; padding: 0; }
+  .nav-menu a:hover, .nav-menu button:hover { color: var(--grey-900); }
+  .nav-company { position: relative; }
+  .nav-company > button { display: inline-flex; align-items: center; gap: 4px; }
+  .nav-company .caret { width: 8px; height: 6px; opacity: .35; fill: currentColor; }
+  .drop { position: absolute; top: 100%; left: 0; margin-top: 8px; background: #fff; border: 1px solid var(--grey-200);
+          border-radius: 8px; box-shadow: 0 12px 30px rgba(17,17,17,.12); opacity: 0; visibility: hidden;
+          transition: all .2s ease; z-index: 50; overflow: hidden; min-width: 150px; }
+  .nav-company:hover .drop { opacity: 1; visibility: visible; }
+  .drop a { display: block; padding: 8px 16px; font-size: 14px; color: var(--grey-700); white-space: nowrap; }
+  .drop a:hover { background: var(--grape-50); color: #000; }
+  .nav-signin { margin-left: auto; font-size: 14px; }
+
+  /* "Request a Demo" — the site's stroke button */
+  .btn-stroke { display: inline-flex; align-items: center; height: 48px; padding: 0 24px; border-radius: 8px;
+                border: 2px solid var(--grape-400); color: var(--grape-500); font-weight: 500; font-size: 14px;
+                background: #fff; white-space: nowrap; transition: border-color .2s ease, color .2s ease; }
+  .btn-stroke:hover { border-color: #000; color: #000; }
+
+  /* ponytail: below 1100px the real header shows a hamburger; here we simply
+     drop the middle nav and keep logo + CTA. Upgrade path: add a JS menu. */
+  @media (max-width: 1099px) { .nav-menu { display: none; } .btn-stroke { margin-left: auto; } }
+
+  /* ---- hero ---- */
+  .hero { padding: 64px 0 8px; }
+  .eyebrow { color: var(--grape); font-weight: 600; font-size: 20px; margin-bottom: 6px; }
+  h1 { color: var(--grey-900); font-weight: 700; letter-spacing: -0.02em; line-height: 1.08;
+       font-size: clamp(38px, 6vw, 58px); margin: 0 0 16px; }
+  .lede { font-size: 18px; color: var(--grey-600); max-width: 620px; margin: 0; }
+
+  /* ---- detected primary download ---- */
+  .cta-card {
+    margin: 40px 0 8px; padding: 24px;
+    background: linear-gradient(135deg, var(--grape-50), var(--grape-100));
+    border: 1px solid var(--grape-200); border-radius: 14px;
+  }
+  .cta-card .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+  .detected { font-size: 15px; color: var(--grey-600); }
+  .detected strong { color: var(--grey-900); font-weight: 600; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 56px; padding: 0 32px;
+    border-radius: 8px; border: 0; cursor: pointer; font-family: var(--sans);
+    font-size: 18px; font-weight: 600; background: var(--grape-600); color: #fff;
+    transition: background .2s ease;
+  }
+  .btn:hover { background: var(--grape-500); color: #fff; }
+  .btn svg { width: 18px; height: 18px; }
+  .alt-link { font-size: 14px; color: var(--grey-600); margin-top: 14px; }
+
+  /* ---- section headings ---- */
+  h2.section { color: var(--grey-900); font-weight: 700; font-size: 28px; margin: 64px 0 8px; letter-spacing: -0.01em; }
+  .section-sub { color: var(--grey-600); font-size: 16px; margin: 0 0 24px; }
+
+  /* ---- platform cards ---- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--white); border: 1px solid var(--grey-200); border-radius: 12px; padding: 24px;
+          box-shadow: 0 1px 2px rgba(17,17,17,.04); transition: box-shadow .2s ease, border-color .2s ease; }
+  .card:hover { box-shadow: 0 12px 28px rgba(119,66,226,.10); border-color: var(--grape-200); }
+  .card h3 { color: var(--grey-900); font-weight: 700; font-size: 18px; margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
+  .card .arch { color: var(--grey-400); font-size: 14px; margin: 0 0 18px; }
+  .card .links { display: flex; flex-direction: column; gap: 10px; }
+  .card .links a { font-family: var(--mono); font-size: 14px; color: var(--grape-600); font-weight: 600; }
+  .card .links a:hover { color: var(--grey-900); }
+  .pill { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--grape-600);
+          background: var(--grape-100); border-radius: 999px; padding: 2px 9px; }
+  .pill.soon { color: var(--grey-400); background: var(--grey-100); }
+
+  /* coming-soon platform cards */
+  .card.soon { background: var(--grey-100); border-style: dashed; box-shadow: none; }
+  .card.soon:hover { box-shadow: none; border-color: var(--grey-300); }
+  .card.soon h3 { color: var(--grey-400); }
+  .card.soon .msg { color: var(--grey-400); font-size: 14px; margin: 0; }
+
+  .btn.disabled { background: var(--grey-200); color: var(--grey-400); pointer-events: none; }
+
+  /* ---- install: tabs + copyable command panels ---- */
+  .tabs { display: flex; gap: 8px; margin: 0 0 18px; flex-wrap: wrap; }
+  .tab { font-family: var(--sans); font-size: 15px; padding: 8px 18px; border-radius: 999px; cursor: pointer;
+         background: var(--white); border: 1px solid var(--grey-300); color: var(--grey-600); }
+  .tab[aria-selected="true"] { background: var(--grape-500); border-color: var(--grape-500); color: #fff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .step { color: var(--grey-600); font-size: 15px; margin: 0 0 10px; }
+  .step code, p code { font-family: var(--mono); font-size: 13.5px; color: var(--grape-600); background: var(--grape-50); padding: 1px 6px; border-radius: 5px; }
+
+  .codeblock { background: var(--grey-200); border-radius: 14px; overflow: hidden; margin: 0 0 20px; max-width: 720px; }
+  .codeblock .title { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--grape); padding: 10px 20px 2px; }
+  .cmd { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer;
+         font-family: var(--mono); font-size: 13.5px; font-weight: 700; color: var(--grape-600);
+         padding: 7px 20px; transition: color .15s ease; }
+  .cmd:last-child { padding-bottom: 16px; }
+  .cmd:hover { color: var(--grey-900); }
+  .cmd .txt { white-space: pre-wrap; word-break: break-all; }
+  .cmd .copy { font-family: var(--sans); font-size: 11px; color: var(--grey-400); display: flex; align-items: center; gap: 4px; flex: none; }
+  .cmd:hover .copy { color: var(--grape-600); }
+  .cmd.copied .copy { color: var(--grape-600); }
+
+  .note { border-left: 3px solid var(--grape-400); background: var(--grape-50); padding: 14px 18px;
+          border-radius: 0 10px 10px 0; font-size: 14.5px; color: var(--grey-700); margin: 18px 0; max-width: 720px; }
+  .note b { color: var(--grape-600); }
+  .note code { font-family: var(--mono); font-size: 13px; color: var(--grape-600); }
+
+  /* ---- numbered getting-started steps ---- */
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step-item { display: grid; grid-template-columns: 44px 1fr; gap: 20px; padding: 8px 0 28px; position: relative; }
+  .step-item:not(:last-child)::before { content: ""; position: absolute; left: 21px; top: 52px; bottom: 0; width: 2px; background: var(--grape-100); }
+  .step-num { width: 44px; height: 44px; border-radius: 50%; background: var(--grape-600); color: #fff;
+              display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; z-index: 1; }
+  .step-body h3 { color: var(--grey-900); font-weight: 700; font-size: 19px; margin: 8px 0 6px; }
+  .step-body > p { color: var(--grey-600); font-size: 15px; margin: 0 0 14px; max-width: 640px; }
+  .step-body .codeblock { margin-top: 4px; }
+  .kbd { font-family: var(--mono); font-size: 12.5px; color: var(--grape-600); background: var(--grape-100); padding: 1px 7px; border-radius: 5px; font-weight: 600; }
+
+  /* ---- tray-first layout: menu mock + feature list ---- */
+  .tray-split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: start; margin-top: 24px; }
+  @media (max-width: 860px) { .tray-split { grid-template-columns: 1fr; gap: 28px; } }
+
+  /* macOS menu-bar dropdown mock */
+  .menubar { background: linear-gradient(180deg, #fafafa, #f0f0f0); border: 1px solid var(--grey-300);
+             border-radius: 8px 8px 0 0; padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+             font-size: 13px; color: var(--grey-600); }
+  .menubar .glyph { color: var(--grape-600); font-weight: 700; }
+  .menubar .tray-ico { width: 15px; height: 15px; display: inline-block; vertical-align: middle; }
+  .menubar .spacer { flex: 1; }
+  .tray-menu { background: var(--white); border: 1px solid var(--grey-300); border-top: 0;
+               border-radius: 0 0 12px 12px; box-shadow: 0 20px 45px rgba(17,17,17,.14); overflow: hidden;
+               font-size: 13.5px; }
+  .tray-menu .mi { padding: 7px 14px; display: flex; align-items: center; gap: 8px; color: var(--grey-700); }
+  .tray-menu .mi.head { color: var(--grey-400); font-size: 12px; font-weight: 600; text-transform: none; padding-top: 9px; }
+  .tray-menu .mi.title { color: var(--grey-900); font-weight: 700; background: var(--grape-50); }
+  .tray-menu .mi.agent { justify-content: flex-start; }
+  .tray-menu .mi.agent .tp { margin-left: auto; color: var(--grape-600); font-weight: 600; font-size: 12.5px; }
+  .tray-menu .mi.hoverable:hover { background: var(--grape-500); color: #fff; }
+  .tray-menu .mi.hoverable:hover .tp { color: #fff; }
+  .tray-menu .ok { color: #16a34a; font-weight: 700; }
+  .tray-menu .off { color: var(--grey-400); font-weight: 700; }
+  .tray-menu .check { margin-left: auto; color: var(--grape-600); font-weight: 700; }
+  .tray-menu .sep { height: 1px; background: var(--grey-200); margin: 4px 0; }
+  .tray-menu .mi.strong { color: var(--grey-900); font-weight: 600; }
+  .menu-caption { font-size: 12.5px; color: var(--grey-400); text-align: center; margin-top: 10px; }
+
+  /* deployment hint: how a fleet / IT admin runs the same thing */
+  .mdm-note { font-size: 13.5px; color: var(--grey-400); margin: 14px 0 0; padding-left: 12px; border-left: 2px solid var(--grape-200); }
+  .mdm-note b { color: var(--grape-600); }
+  .mdm-note code { font-family: var(--mono); font-size: 12.5px; color: var(--grape-600); background: var(--grape-50); padding: 1px 6px; border-radius: 5px; }
+
+  /* what-you-can-do feature list */
+  .feat { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 18px; }
+  .feat li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; }
+  .feat .ic { width: 26px; height: 26px; border-radius: 7px; background: var(--grape-100); color: var(--grape-600);
+              display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .feat h4 { color: var(--grey-900); font-weight: 700; font-size: 15.5px; margin: 2px 0 3px; }
+  .feat p { color: var(--grey-600); font-size: 14px; margin: 0; }
+
+  footer { margin-top: 72px; border-top: 1px solid var(--grey-200); }
+  footer .page { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; padding-top: 22px; padding-bottom: 40px;
+                 color: var(--grey-400); font-size: 14px; }
+  footer a { color: var(--grey-600); }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="page">
+    <a class="lockup" href="https://www.qpoint.io" aria-label="Go to QPoint homepage">
+      <span class="lockup-q">
+        <svg class="logo-ic" viewBox="0 0 67.18 67.34" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
+          <path d="M64.11,67.34c-.73,0-1.46-.28-2.02-.84l-1.97-1.97c-1.11-1.12-1.11-2.92,0-4.04,1.12-1.11,2.92-1.12,4.04,0l1.97,1.97c1.11,1.12,1.11,2.92,0,4.04-.56.56-1.29.84-2.02.84Z"/>
+          <path d="M33.59,0C15.04,0,0,15.04,0,33.59s15.04,33.59,33.59,33.59,33.59-15.04,33.59-33.59S52.14,0,33.59,0ZM53.79,54.17c-.56.56-1.29.84-2.02.84s-1.46-.28-2.02-.84l-8.31-8.31c-1.12-1.12-1.12-2.92,0-4.04,1.11-1.12,2.93-1.12,4.04,0l8.31,8.31c1.12,1.12,1.12,2.92,0,4.04Z"/>
+        </svg>
+        <span class="lockup-name">QPoint</span>
+      </span>
+      <span class="lockup-div"></span>
+      <span class="lockup-tag">The<br /><span class="grape">AI Agent</span><br />Company</span>
+    </a>
+
+    <div class="nav-menu">
+      <div class="nav-links">
+        <a href="https://www.qpoint.io/#how-it-works">How it works</a>
+        <a href="https://www.qpoint.io/#the-problem">The Problem</a>
+        <a href="https://www.qpoint.io/#technology">Technology</a>
+        <div class="nav-company">
+          <button type="button">Company
+            <svg class="caret" viewBox="0 0 7.82 5.82" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="7.82 0 3.91 5.82 0 0 7.82 0"/></svg>
+          </button>
+          <div class="drop">
+            <a href="https://www.qpoint.io/company/about-us">About Us</a>
+            <a href="https://www.qpoint.io/jobs">Jobs</a>
+          </div>
+        </div>
+        <a href="https://www.qpoint.io/blog">Blog</a>
+      </div>
+      <a class="nav-signin" href="https://app.qpoint.io/">Sign-in</a>
+    </div>
+
+    <a class="btn-stroke" href="https://www.qpoint.io/contact">Request a Demo</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <section class="hero">
+    <div class="eyebrow">Download</div>
+    <h1>Install qcontrol</h1>
+    <p class="lede">A single binary that wraps and observes every AI agent on the machine — no gateways, no SDKs. Available now for macOS; Linux and Windows are coming soon.</p>
+
+    <div class="cta-card">
+      <div class="row">
+        <div class="detected" id="detected">Detecting your platform…</div>
+        <a class="btn" id="primaryBtn" href="#downloads">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+          <span id="primaryLabel">Choose your platform</span>
+        </a>
+      </div>
+      <div class="alt-link" id="altLink"></div>
+    </div>
+  </section>
+
+  <h2 class="section" id="downloads">All downloads</h2>
+  <p class="section-sub">Always resolves to the latest release.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>macOS <span class="pill">Apple Silicon</span></h3>
+      <p class="arch">arm64 · M1 or newer</p>
+      <div class="links">
+        <a data-dl="macos-arm64.pkg">Installer · .pkg</a>
+        <a data-dl="macos-arm64.tgz">Tarball · .tgz</a>
+      </div>
+    </div>
+    <div class="card soon">
+      <h3>Linux <span class="pill soon">Coming soon</span></h3>
+      <p class="arch">x86_64 &amp; arm64</p>
+      <p class="msg">Native builds are on the way.</p>
+    </div>
+    <div class="card soon">
+      <h3>Windows <span class="pill soon">Coming soon</span></h3>
+      <p class="arch">x64</p>
+      <p class="msg">Native builds are on the way.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Get started on macOS</h2>
+  <p class="section-sub">The menu-bar tray is the interface. Install, start it once, and everything else is a click.</p>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Install the package</h3>
+        <p>Double-click the downloaded <span class="kbd">.pkg</span> — or run it from a terminal. It puts <code>qcontrol</code> on your PATH and sets up machine trust automatically. No extra setup.</p>
+        <div class="codeblock">
+          <div class="cmd"><span class="txt">sudo installer -pkg ~/Downloads/qcontrol-latest-macos-arm64.pkg -target /</span><span class="copy">copy</span></div>
+        </div>
+        <div class="note"><b>Unsigned build:</b> Gatekeeper flags it as from an unidentified developer. The terminal command above installs it anyway. If you double-click it in Finder and it's blocked, open <b>System Settings → Privacy &amp; Security</b> and click <b>Open Anyway</b>.</div>
+        <p class="mdm-note">Rolling out to a fleet? Push the same <b>.pkg through MDM</b> — the installer needs no logged-in user and sets machine trust in its postinstall.</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Start qcontrol</h3>
+        <p>Run this once. qcontrol begins monitoring in the background and its icon appears in your menu bar — that's your whole interface from here on.</p>
+        <div class="codeblock">
+          <div class="cmd"><span class="txt">qcontrol start</span><span class="copy">copy</span></div>
+        </div>
+        <p class="mdm-note">Stop it anytime with <code>qcontrol stop</code>. For fleet rollout, run <code>qcontrol start</code> from a per-user <b>LaunchAgent</b> — the tray needs a logged-in desktop session to appear.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">Everything else is in the menu bar</h2>
+  <p class="section-sub">Click the qcontrol icon — discovery is automatic, tapping is a click.</p>
+
+  <div class="tray-split">
+    <div>
+      <div class="menubar">
+        <span class="spacer"></span>
+        <img class="tray-ico" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAAEECAYAAADOCEoKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAylpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMS1jMDAyIDc5LmE2YTYzOTY4YSwgMjAyNC8wMy8wNi0xMTo1MjowNSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI1LjEyIChNYWNpbnRvc2gpIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjBFNkM3QUZEOEYyRjExRUZBNzYyOTRFQjYwRDcwRTE2IiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOjBFNkM3QUZFOEYyRjExRUZBNzYyOTRFQjYwRDcwRTE2Ij4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6MEU2QzdBRkI4RjJGMTFFRkE3NjI5NEVCNjBENzBFMTYiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6MEU2QzdBRkM4RjJGMTFFRkE3NjI5NEVCNjBENzBFMTYiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz4MTB1gAAAUdUlEQVR4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" alt="qcontrol" /><span>🔋</span><span>Wed 9:41</span>
+      </div>
+      <div class="tray-menu">
+        <div class="mi title">qcontrol — running 2, installed 3</div>
+        <div class="mi head">Running (2)</div>
+        <div class="mi agent hoverable"><span class="ok">✓</span> claude — pid 4820<span class="tp">Untap</span></div>
+        <div class="mi agent hoverable"><span class="off">⊘</span> codex — pid 5119<span class="tp">Tap</span></div>
+        <div class="sep"></div>
+        <div class="mi head">Installed</div>
+        <div class="mi agent hoverable"><span class="ok">✓</span> claude-code&nbsp;&nbsp;v1.2<span class="tp">Untap</span></div>
+        <div class="mi agent hoverable"><span class="off">⊘</span> cursor&nbsp;&nbsp;v0.44<span class="tp">Tap</span></div>
+        <div class="mi agent hoverable"><span class="off">⊘</span> gemini-cli<span class="tp">Tap</span></div>
+        <div class="sep"></div>
+        <div class="mi strong hoverable">Auto-tap new agents<span class="check">✓</span></div>
+        <div class="mi strong hoverable">Tap all (admin)…</div>
+        <div class="mi hoverable">Untap all (admin)…</div>
+        <div class="sep"></div>
+        <div class="mi hoverable">Rescan installations</div>
+        <div class="mi hoverable">Quit</div>
+      </div>
+      <div class="menu-caption">The actual qcontrol menu: live counts, per-agent tap toggles, and bulk actions.</div>
+    </div>
+
+    <ul class="feat">
+      <li><div class="ic">◎</div><div><h4>See every agent</h4><p>The header counts what's running and installed. Each entry shows <span class="ok" style="color:#16a34a">✓</span> tapped or <span class="off">⊘</span> untapped.</p></div></li>
+      <li><div class="ic">⚡</div><div><h4>Auto-tap new agents</h4><p>Flip it on and qcontrol taps each newly discovered, user-writable agent automatically — no prompts.</p></div></li>
+      <li><div class="ic">✓</div><div><h4>Tap all in one click</h4><p><b>Tap all (admin)…</b> sweeps everything behind a single admin prompt — including protected apps under Homebrew and <code>/Applications</code>.</p></div></li>
+      <li><div class="ic">↺</div><div><h4>Toggle anything</h4><p>Click any agent to tap or untap it individually. Rescan refreshes discovery on demand.</p></div></li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  <div class="page">
+    <a href="https://www.qpoint.io">qpoint.io</a>
+    <span>© Qpoint</span>
+  </div>
+</footer>
+
+<script>
+  // ---------------------------------------------------------------------------
+  // Single knob: the public base URL the release artifacts are served from.
+  // Binaries live in the Cloudflare R2 `downloads` bucket under `qcontrol/`.
+  // Point this at whatever public domain the team wires up. No trailing slash.
+  // ---------------------------------------------------------------------------
+  const DOWNLOAD_BASE = "https://downloads.qpoint.io";
+  const url = (suffix) => `${DOWNLOAD_BASE}/qcontrol/qcontrol-latest-${suffix}`;
+
+  // Wire every download link to its real artifact URL.
+  document.querySelectorAll("[data-dl]").forEach((a) => { a.href = url(a.getAttribute("data-dl")); });
+
+  // ---- platform detection for the primary button ----
+  // Only macOS ships today; Linux and Windows are coming soon, so a non-mac
+  // visitor gets a disabled "coming soon" button plus the available macOS build.
+  function detect() {
+    const ua = navigator.userAgent, plat = (navigator.platform || "").toLowerCase();
+    if (/mac/i.test(ua) || plat.includes("mac")) return "macos";
+    if (/win/i.test(ua) || plat.includes("win")) return "windows";
+    if (/linux|x11/i.test(ua) || plat.includes("linux")) return "linux";
+    return null;
+  }
+
+  const os = detect();
+  const detectedEl = document.getElementById("detected");
+  const btn = document.getElementById("primaryBtn");
+  const labelEl = document.getElementById("primaryLabel");
+  const altEl = document.getElementById("altLink");
+
+  if (os === "macos") {
+    detectedEl.innerHTML = `Detected <strong>macOS</strong>`;
+    btn.href = url("macos-arm64.pkg");
+    labelEl.textContent = "Download for macOS";
+    altEl.textContent = "Apple Silicon (M1 or newer).";
+  } else if (os === "linux" || os === "windows") {
+    const name = os === "linux" ? "Linux" : "Windows";
+    detectedEl.innerHTML = `Detected <strong>${name}</strong> — support is coming soon`;
+    btn.classList.add("disabled");
+    labelEl.textContent = "Coming soon";
+    altEl.innerHTML = 'macOS is available today — <a href="' + url("macos-arm64.pkg") + '">download the macOS build</a>.';
+  } else {
+    detectedEl.textContent = "macOS available now — Linux and Windows coming soon.";
+    btn.href = url("macos-arm64.pkg");
+    labelEl.textContent = "Download for macOS";
+  }
+
+  // ---- click-to-copy command lines (mirrors the site's SingleLineCopy) ----
+  document.querySelectorAll(".cmd").forEach((row) => {
+    row.addEventListener("click", async () => {
+      const text = row.querySelector(".txt").textContent;
+      try { await navigator.clipboard.writeText(text); }
+      catch { const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+              document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
+      const label = row.querySelector(".copy");
+      row.classList.add("copied"); label.textContent = "copied";
+      setTimeout(() => { row.classList.remove("copied"); label.textContent = "copy"; }, 2000);
+    });
+  });
+</script>
+</body>
+</html>
